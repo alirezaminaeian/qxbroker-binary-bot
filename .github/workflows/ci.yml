@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Test collector (if credentials available)
+      if: env.QX_EMAIL != ''
+      env:
+        QX_EMAIL: ${{ secrets.QX_EMAIL }}
+        QX_PASSWORD: ${{ secrets.QX_PASSWORD }}
+        HEADLESS: true
+      run: |
+        mkdir -p artifacts/screenshots
+        npm run collect:screenshot || echo "Collector test failed - check credentials"
+    
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: artifacts/
+        retention-days: 7

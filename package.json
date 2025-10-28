@@ -1,0 +1,30 @@
+{
+  "name": "japani",
+  "version": "1.0.0",
+  "description": "QXBroker Nison-based Binary Options Bot",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "prepare": "playwright install || true",
+    "collect:screenshot": "node src/collector/collect_screenshot.js",
+    "test": "node src/tests/strategy.test.js && node src/tests/telegram.test.js",
+    "test:strategy": "node src/tests/strategy.test.js",
+    "test:telegram": "node src/tests/telegram.test.js",
+    "backtest": "node src/backtest/index.js",
+    "healthcheck": "node deploy/healthcheck.js",
+    "start": "node src/main.js",
+    "lint": "echo 'Linting not configured yet'",
+    "deploy": "bash deploy/start.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "node-telegram-bot-api": "^0.66.0",
+    "playwright": "^1.56.1"
+  }
+}
