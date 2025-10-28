@@ -56,6 +56,39 @@ npm run collect:screenshot
 - هیچ اعتباری در کد هاردکد نشده است. از متغیرهای محیطی استفاده کنید.
 - برای استقرار روی GitHub، Secrets را مطابق README بخش Deployment تنظیم کنید.
 
+## استقرار روی Railway
+
+### مراحل استقرار:
+
+1. **ایجاد پروژه Railway:**
+   - وارد Railway.app شوید
+   - روی "New Project" کلیک کنید
+   - "Deploy from GitHub repo" را انتخاب کنید
+   - مخزن `qxbroker-binary-bot` را انتخاب کنید
+
+2. **تنظیم متغیرهای محیطی:**
+   ```
+   TELEGRAM_TOKEN=8452602898:AAGoVucfJrq8bs_UiiBVSwDwErYjbOYbUDo
+   TELEGRAM_CHAT_ID=472112702
+   QX_EMAIL=alirezaminaeian213@gmail.com
+   QX_PASSWORD=Am09124503581
+   HEADLESS=true
+   BROWSER_CHANNEL=msedge
+   BROWSER_TIMEOUT=180000
+   USER_DATA_DIR=/app/.playwright_profile
+   SCREENSHOT_PATH=/app/artifacts/screens/
+   ```
+
+3. **نصب وابستگی‌ها:**
+   Railway به طور خودکار وابستگی‌ها را نصب می‌کند.
+
+4. **اجرای ربات:**
+   ربات هر ۱۰ دقیقه یکبار اجرا می‌شود و سیگنال‌ها را ارسال می‌کند.
+
+### مانیتورینگ:
+- Health Check: `https://your-app.railway.app/health`
+- لاگ‌ها در Railway Dashboard قابل مشاهده است.
+
 ## گام‌های بعدی
 - استخراج کندل‌های ۵ و ۱۰ دقیقه از DOM چارت و همگام‌سازی.
 - پیاده‌سازی الگوهای شمعی نیسون + قوانین تأیید چندعاملی.
