@@ -1,0 +1,15 @@
+# Ignore unnecessary files for Railway deployment
+node_modules/
+.git/
+.gitignore
+*.log
+artifacts/
+docs/
+src/tests/
+src/backtest/
+deploy/
+ci/
+*.md
+.env
+.env.local
+.env.example

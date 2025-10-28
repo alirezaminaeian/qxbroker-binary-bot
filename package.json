@@ -8,7 +8,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "prepare": "playwright install || true",
+    "prepare": "echo 'Skipping playwright install in production'",
     "collect:screenshot": "node src/collector/collect_screenshot.js",
     "collect:candles": "node src/collector/collect_screenshot.js --extract-candles",
     "signals:generate": "node src/strategy/generate_signals.js",
