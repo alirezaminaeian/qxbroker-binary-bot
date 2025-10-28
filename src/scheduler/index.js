@@ -86,9 +86,9 @@ class BotScheduler {
 }
 
 // Health check endpoint for Railway
-function createHealthCheck() {
-	const express = require('express');
-	const app = express();
+async function createHealthCheck() {
+	const express = await import('express');
+	const app = express.default();
 	const port = process.env.PORT || 3000;
 
 	app.get('/health', (req, res) => {
@@ -113,26 +113,35 @@ function createHealthCheck() {
 	});
 }
 
-// Start the scheduler
-const scheduler = new BotScheduler();
+// Main function
+async function main() {
+	// Start the scheduler
+	const scheduler = new BotScheduler();
 
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-	logger.info('Received SIGINT, shutting down gracefully...');
-	scheduler.stop();
-	process.exit(0);
+	// Handle graceful shutdown
+	process.on('SIGINT', () => {
+		logger.info('Received SIGINT, shutting down gracefully...');
+		scheduler.stop();
+		process.exit(0);
+	});
+
+	process.on('SIGTERM', () => {
+		logger.info('Received SIGTERM, shutting down gracefully...');
+		scheduler.stop();
+		process.exit(0);
+	});
+
+	// Start health check server
+	await createHealthCheck();
+
+	// Start the scheduler
+	scheduler.start();
+}
+
+// Start the application
+main().catch(err => {
+	logger.error({ err }, 'Failed to start application');
+	process.exit(1);
 });
-
-process.on('SIGTERM', () => {
-	logger.info('Received SIGTERM, shutting down gracefully...');
-	scheduler.stop();
-	process.exit(0);
-});
-
-// Start health check server
-createHealthCheck();
-
-// Start the scheduler
-scheduler.start();
 
 export default BotScheduler;
