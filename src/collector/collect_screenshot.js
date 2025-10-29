@@ -360,10 +360,32 @@ async function captureChart(page, outPath) {
 
 	logger.info({ headless, extractCandles, userDataDir, browserTimeout }, 'Launching browser with persistent context');
 	
-	const browser = await chromium.launchPersistentContext(userDataDir, {
-		...launchOptions,
-		viewport: { width: 1440, height: 900 }
-	});
+	let browser;
+	try {
+		browser = await chromium.launchPersistentContext(userDataDir, {
+			...launchOptions,
+			viewport: { width: 1440, height: 900 }
+		});
+	} catch (err) {
+		// Auto-install Chromium on platforms like Railway if missing
+		if (/Executable doesn't exist/i.test(String(err?.message || ''))) {
+			logger.warn('Playwright Chromium not installed. Attempting runtime install...');
+			try {
+				const { execSync } = await import('node:child_process');
+				execSync('npx playwright install chromium --with-deps', { stdio: 'inherit' });
+				browser = await chromium.launchPersistentContext(userDataDir, {
+					...launchOptions,
+					viewport: { width: 1440, height: 900 }
+				});
+				logger.info('Playwright Chromium installed and launched.');
+			} catch (installErr) {
+				logger.error({ err: installErr }, 'Failed to install Playwright Chromium at runtime');
+				throw installErr;
+			}
+		} else {
+			throw err;
+		}
+	}
 	
 	const page = browser.pages()[0] || await browser.newPage();
 

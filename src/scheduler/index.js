@@ -1,5 +1,10 @@
 // Scheduler for automated bot execution
 import 'dotenv/config';
+// Debug: show relevant env vars present at runtime
+try {
+    const keys = Object.keys(process.env).filter(k => k.includes('TELEGRAM') || k.includes('QX'));
+    console.log('ALL ENV VARS:', keys);
+} catch {}
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import pino from 'pino';
