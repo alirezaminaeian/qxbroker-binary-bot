@@ -86,7 +86,7 @@ class BotScheduler {
 }
 
 // Health check endpoint for Railway
-async function createHealthCheck() {
+async function createHealthCheck(schedulerInstance) {
 	const express = await import('express');
 	const app = express.default();
 	const port = process.env.PORT || 3000;
@@ -96,7 +96,7 @@ async function createHealthCheck() {
 			status: 'ok',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
-			lastRun: scheduler.lastRun
+			lastRun: schedulerInstance ? schedulerInstance.lastRun : null
 		});
 	});
 
@@ -132,7 +132,7 @@ async function main() {
 	});
 
 	// Start health check server
-	await createHealthCheck();
+	await createHealthCheck(scheduler);
 
 	// Start the scheduler
 	scheduler.start();
