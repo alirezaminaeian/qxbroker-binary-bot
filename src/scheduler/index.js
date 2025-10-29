@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import pino from 'pino';
+import TelegramBot from 'node-telegram-bot-api';
 
 const execAsync = promisify(exec);
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
@@ -77,6 +78,23 @@ class BotScheduler {
 		}, this.interval);
 		
 		logger.info('Bot scheduler started successfully');
+
+		// Send startup test message to Telegram
+		(async () => {
+			try {
+				const token = process.env.TELEGRAM_TOKEN;
+				const chatId = process.env.TELEGRAM_CHAT_ID;
+				if (!token || !chatId) {
+					console.error('TEST MESSAGE FAILED: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID');
+					return;
+				}
+				const bot = new TelegramBot(token, { polling: false });
+				await bot.sendMessage(chatId, `🚀 [TEST] Bot started at ${new Date().toLocaleString('fa-IR')}`);
+				console.log('TEST MESSAGE SENT TO TELEGRAM');
+			} catch (err) {
+				console.error('TEST MESSAGE FAILED:', err.message);
+			}
+		})();
 	}
 
 	stop() {
