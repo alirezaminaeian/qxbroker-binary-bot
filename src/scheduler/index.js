@@ -152,14 +152,25 @@ async function main() {
 	// Start the scheduler
 	scheduler.start();
 
-	// Delayed runtime env check for Nixpacks
-	setTimeout(() => {
-		console.log('RUNTIME ENV VARS:', {
-			TELEGRAM_TOKEN: !!process.env.TELEGRAM_TOKEN,
-			TELEGRAM_CHAT_ID: !!process.env.TELEGRAM_CHAT_ID,
-			QX_EMAIL: !!process.env.QX_EMAIL
-		});
-	}, 5000);
+	// Delayed runtime env loader for Nixpacks (10s)
+	setTimeout(async () => {
+		const token = process.env.TELEGRAM_TOKEN;
+		const chatId = process.env.TELEGRAM_CHAT_ID;
+		console.log('RUNTIME ENV CHECK:', { hasToken: !!token, hasChatId: !!chatId });
+		if (!token || !chatId) {
+			console.error('ENV STILL MISSING - Check Railway Variables');
+			return;
+		}
+		const bot = new TelegramBot(token, { polling: false });
+		try {
+			await bot.sendMessage(chatId, `🚀 [TEST] Bot alive at ${new Date().toLocaleString('fa-IR')}`);
+			console.log('TEST MESSAGE SENT SUCCESSFULLY');
+		} catch (err) {
+			console.error('SEND FAILED:', err.message);
+		}
+		await bot.sendMessage(chatId, `✅ CALL | EURUSD | Win: 88% | TEST SIGNAL`);
+		console.log('TEST SIGNAL SENT');
+	}, 10000);
 }
 
 // Start the application
