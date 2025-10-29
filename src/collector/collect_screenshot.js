@@ -6,12 +6,8 @@ import pino from 'pino';
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
-function requiredEnv(name) {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing required env: ${name}`);
-	}
-	return value;
+function getEnv(name) {
+    return process.env[name] || '';
 }
 
 async function ensureDir(dirPath) {
@@ -185,37 +181,44 @@ async function loginAndNavigate(page, email, password) {
 	// Handle cookie consent first
 	await handleCookieConsent(page);
 	
-	// Try to find and click login button
-	const loginButtonSelectors = [
-		'text=Log in',
-		'text=ورود',
-		'text=Sign in',
-		'text=Login',
-		'.login-button',
-		'#login-button',
-		'[data-testid="login-button"]'
-	];
-	
-	let loginClicked = false;
-	for (const selector of loginButtonSelectors) {
-		try {
-			const element = await page.$(selector);
-			if (element) {
-				await element.click();
-				logger.info({ selector }, 'Login button clicked');
-				loginClicked = true;
-				await wait(2000); // Wait for login form to appear
-				break;
-			}
-		} catch (err) {
-			// Continue to next selector
-		}
-	}
-	
-	// Attempt automatic login
-	if (loginClicked) {
-		await performLogin(page, email, password);
-	}
+    // If credentials provided, try to login; otherwise skip login and continue
+    if (email && password) {
+        // Try to find and click login button
+        const loginButtonSelectors = [
+            'text=Log in',
+            'text=ورود',
+            'text=Sign in',
+            'text=Login',
+            '.login-button',
+            '#login-button',
+            '[data-testid="login-button"]'
+        ];
+        
+        let loginClicked = false;
+        for (const selector of loginButtonSelectors) {
+            try {
+                const element = await page.$(selector);
+                if (element) {
+                    await element.click();
+                    logger.info({ selector }, 'Login button clicked');
+                    loginClicked = true;
+                    await wait(2000); // Wait for login form to appear
+                    break;
+                }
+            } catch (err) {
+                // Continue to next selector
+            }
+        }
+        
+        // Attempt automatic login
+        if (loginClicked) {
+            await performLogin(page, email, password);
+        } else {
+            logger.warn('Login button not found; continuing without login');
+        }
+    } else {
+        logger.warn('QX_EMAIL/QX_PASSWORD not set; continuing without login');
+    }
 	
 	// Wait for potential redirect or dashboard
 	try {
@@ -330,9 +333,9 @@ async function captureChart(page, outPath) {
 }
 
 (async () => {
-	const headless = String(process.env.HEADLESS || 'true').toLowerCase() !== 'false';
-	const email = requiredEnv('QX_EMAIL');
-	const password = requiredEnv('QX_PASSWORD');
+    const headless = String(process.env.HEADLESS || 'true').toLowerCase() !== 'false';
+    const email = getEnv('QX_EMAIL');
+    const password = getEnv('QX_PASSWORD');
 	const artifactsDir = process.env.ARTIFACTS_DIR || 'artifacts';
 	const screenshotName = process.env.SCREENSHOT_NAME || 'chart.png';
 	const dataDir = path.join(artifactsDir, 'data');
