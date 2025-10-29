@@ -84,10 +84,7 @@ class BotScheduler {
 			try {
 				const token = process.env.TELEGRAM_TOKEN;
 				const chatId = process.env.TELEGRAM_CHAT_ID;
-				if (!token || !chatId) {
-					console.error('TEST MESSAGE FAILED: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID');
-					return;
-				}
+				if (!token || !chatId) throw new Error('Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID');
 				const bot = new TelegramBot(token, { polling: false });
 				await bot.sendMessage(chatId, `🚀 [TEST] Bot started at ${new Date().toLocaleString('fa-IR')}`);
 				console.log('TEST MESSAGE SENT TO TELEGRAM');
