@@ -1,19 +1,20 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "env": {
-      "TELEGRAM_TOKEN": "${{TELEGRAM_TOKEN}}",
-      "TELEGRAM_CHAT_ID": "${{TELEGRAM_CHAT_ID}}",
-      "QX_EMAIL": "${{QX_EMAIL}}",
-      "QX_PASSWORD": "${{QX_PASSWORD}}"
-    }
+    "builder": "NIXPACKS"
   },
   "deploy": {
     "startCommand": "node src/scheduler/index.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 5
+    "restartPolicyMaxRetries": 5,
+    "env": {
+      "TELEGRAM_TOKEN": "${{TELEGRAM_TOKEN}}",
+      "TELEGRAM_CHAT_ID": "${{TELEGRAM_CHAT_ID}}",
+      "QX_EMAIL": "${{QX_EMAIL}}",
+      "QX_PASSWORD": "${{QX_PASSWORD}}",
+      "QX_SYMBOLS": "${{QX_SYMBOLS}}"
+    }
   }
 }
