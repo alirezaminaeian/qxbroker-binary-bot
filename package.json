@@ -9,6 +9,7 @@
   },
   "scripts": {
     "prepare": "echo 'Skipping playwright install in production'",
+    "postinstall": "npx playwright install chromium --with-deps || npx playwright install chromium",
     "collect:screenshot": "node src/collector/collect_screenshot.js",
     "collect:candles": "node src/collector/collect_screenshot.js --extract-candles",
     "signals:generate": "node src/strategy/generate_signals.js",
