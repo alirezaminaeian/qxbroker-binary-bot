@@ -1,10 +1,5 @@
 // Scheduler for automated bot execution
 import 'dotenv/config';
-// Debug: show relevant env vars present at runtime
-try {
-    const keys = Object.keys(process.env).filter(k => k.includes('TELEGRAM') || k.includes('QX'));
-    console.log('ALL ENV VARS:', keys);
-} catch {}
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import pino from 'pino';
@@ -156,6 +151,15 @@ async function main() {
 
 	// Start the scheduler
 	scheduler.start();
+
+	// Delayed runtime env check for Nixpacks
+	setTimeout(() => {
+		console.log('RUNTIME ENV VARS:', {
+			TELEGRAM_TOKEN: !!process.env.TELEGRAM_TOKEN,
+			TELEGRAM_CHAT_ID: !!process.env.TELEGRAM_CHAT_ID,
+			QX_EMAIL: !!process.env.QX_EMAIL
+		});
+	}, 5000);
 }
 
 // Start the application
