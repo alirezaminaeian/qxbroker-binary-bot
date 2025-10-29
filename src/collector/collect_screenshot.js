@@ -340,8 +340,7 @@ async function captureChart(page, outPath) {
 	const screenshotName = process.env.SCREENSHOT_NAME || 'chart.png';
 	const dataDir = path.join(artifactsDir, 'data');
 	const logsDir = path.join(artifactsDir, 'logs');
-	const userDataDir = process.env.USER_DATA_DIR || path.join(process.cwd(), '.playwright_profile');
-	const browserTimeout = parseInt(process.env.BROWSER_TIMEOUT || '120000');
+    const browserTimeout = parseInt(process.env.BROWSER_TIMEOUT || '120000');
 	
 	await ensureDir(artifactsDir); 
 	await ensureDir(dataDir); 
@@ -351,32 +350,34 @@ async function captureChart(page, outPath) {
 	const outPath = path.join(artifactsDir, screenshotName);
 	const extractCandles = process.argv.includes('--extract-candles');
 
-	const launchOptions = { 
-		headless,
-		timeout: browserTimeout
-	};
-	if (process.env.BROWSER_CHANNEL) launchOptions.channel = process.env.BROWSER_CHANNEL;
-	if (process.env.BROWSER_EXECUTABLE_PATH) launchOptions.executablePath = process.env.BROWSER_EXECUTABLE_PATH;
+    const launchOptions = {
+        headless,
+        timeout: browserTimeout,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--single-process',
+            '--no-zygote'
+        ]
+    };
+    if (process.env.BROWSER_CHANNEL) launchOptions.channel = process.env.BROWSER_CHANNEL;
+    if (process.env.BROWSER_EXECUTABLE_PATH) launchOptions.executablePath = process.env.BROWSER_EXECUTABLE_PATH;
 
-	logger.info({ headless, extractCandles, userDataDir, browserTimeout }, 'Launching browser with persistent context');
-	
-	let browser;
-	try {
-		browser = await chromium.launchPersistentContext(userDataDir, {
-			...launchOptions,
-			viewport: { width: 1440, height: 900 }
-		});
-	} catch (err) {
+    logger.info({ headless, extractCandles, browserTimeout }, 'Launching Chromium');
+
+    let browser;
+    try {
+        browser = await chromium.launch(launchOptions);
+    } catch (err) {
 		// Auto-install Chromium on platforms like Railway if missing
 		if (/Executable doesn't exist/i.test(String(err?.message || ''))) {
 			logger.warn('Playwright Chromium not installed. Attempting runtime install...');
 			try {
 				const { execSync } = await import('node:child_process');
 				execSync('npx playwright install chromium --with-deps', { stdio: 'inherit' });
-				browser = await chromium.launchPersistentContext(userDataDir, {
-					...launchOptions,
-					viewport: { width: 1440, height: 900 }
-				});
+                browser = await chromium.launch(launchOptions);
 				logger.info('Playwright Chromium installed and launched.');
 			} catch (installErr) {
 				logger.error({ err: installErr }, 'Failed to install Playwright Chromium at runtime');
@@ -386,15 +387,17 @@ async function captureChart(page, outPath) {
 			throw err;
 		}
 	}
-	
-	const page = browser.pages()[0] || await browser.newPage();
+
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36');
 
 	// Add console and error listeners
 	page.on('console', msg => logger.debug({ type: msg.type(), text: msg.text() }, 'PAGE LOG'));
 	page.on('pageerror', err => logger.error({ error: err.message }, 'PAGE ERROR'));
 
 	try {
-		await loginAndNavigate(page, email, password);
+        await loginAndNavigate(page, email, password);
 		logger.info('Login navigation completed');
 
 		const info = await captureChart(page, outPath);
@@ -436,6 +439,7 @@ async function captureChart(page, outPath) {
 		
 		process.exitCode = 1;
 	} finally {
-		await browser.close();
+        await context.close();
+        await browser.close();
 	}
 })();
