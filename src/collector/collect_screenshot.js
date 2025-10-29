@@ -174,59 +174,69 @@ async function performLogin(page, email, password) {
 }
 
 async function loginAndNavigate(page, email, password) {
-	logger.info({ step: 'navigate', url: 'https://qxbroker.com/' }, 'Navigating to broker');
-	await page.goto('https://qxbroker.com/', { waitUntil: 'load', timeout: 120000 });
-	logger.info('Page loaded');
-	
-	// Handle cookie consent first
-	await handleCookieConsent(page);
-	
-    // If credentials provided, try to login; otherwise skip login and continue
+    logger.info({ step: 'navigate', url: 'https://qxbroker.com/' }, 'Navigating to broker');
+    await page.goto('https://qxbroker.com/', { waitUntil: 'domcontentloaded', timeout: 180000 });
+    try { await page.waitForLoadState('networkidle', { timeout: 60000 }); } catch {}
+    logger.info('Landing page reached');
+
+    // Handle cookie consent first
+    await handleCookieConsent(page);
+
+    // Try direct login page first if creds provided
     if (email && password) {
-        // Try to find and click login button
-        const loginButtonSelectors = [
-            'text=Log in',
-            'text=ورود',
-            'text=Sign in',
-            'text=Login',
-            '.login-button',
-            '#login-button',
-            '[data-testid="login-button"]'
-        ];
-        
-        let loginClicked = false;
-        for (const selector of loginButtonSelectors) {
-            try {
-                const element = await page.$(selector);
-                if (element) {
-                    await element.click();
-                    logger.info({ selector }, 'Login button clicked');
-                    loginClicked = true;
-                    await wait(2000); // Wait for login form to appear
-                    break;
-                }
-            } catch (err) {
-                // Continue to next selector
-            }
-        }
-        
-        // Attempt automatic login
-        if (loginClicked) {
+        try {
+            await page.goto('https://qxbroker.com/login', { waitUntil: 'domcontentloaded', timeout: 120000 });
+            await wait(1500);
             await performLogin(page, email, password);
-        } else {
-            logger.warn('Login button not found; continuing without login');
+            try { await page.waitForLoadState('networkidle', { timeout: 60000 }); } catch {}
+            logger.info('Login via /login attempted');
+        } catch (e) {
+            logger.warn({ err: e.message }, 'Direct /login failed, falling back to button flow');
+            // Fallback: click login button on home if exists
+            const loginButtonSelectors = [
+                'text=Log in', 'text=ورود', 'text=Sign in', 'text=Login',
+                '.login-button', '#login-button', '[data-testid="login-button"]'
+            ];
+            for (const selector of loginButtonSelectors) {
+                try {
+                    const element = await page.$(selector);
+                    if (element) {
+                        await element.click();
+                        logger.info({ selector }, 'Login button clicked');
+                        await wait(1500);
+                        await performLogin(page, email, password);
+                        try { await page.waitForLoadState('networkidle', { timeout: 60000 }); } catch {}
+                        break;
+                    }
+                } catch {}
+            }
         }
     } else {
         logger.warn('QX_EMAIL/QX_PASSWORD not set; continuing without login');
     }
-	
-	// Wait for potential redirect or dashboard
-	try {
-		await page.waitForLoadState('networkidle', { timeout: 120000 });
-		logger.info('Page reached network idle state');
-	} catch (err) {
-		logger.warn({ err }, 'Network idle timeout, continuing anyway');
-	}
+
+    // Navigate to a trading page for symbol
+    try {
+        const symbol = (process.env.SYMBOL || (process.env.QX_SYMBOLS || '').split(',')[0] || 'EURUSD').trim();
+        const candidates = [
+            `https://qxbroker.com/trading/${symbol}`,
+            `https://qxbroker.com/chart/${symbol}`,
+            `https://qxbroker.com/#${symbol}`,
+            'https://qxbroker.com/trading'
+        ];
+        for (const url of candidates) {
+            try {
+                await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+                try { await page.waitForLoadState('networkidle', { timeout: 45000 }); } catch {}
+                logger.info({ url }, 'Symbol page candidate opened');
+                break;
+            } catch (err) {
+                logger.warn({ url, err: err.message }, 'Symbol candidate failed');
+            }
+        }
+    } catch (err) {
+        logger.warn({ err: err.message }, 'Symbol navigation skipped');
+    }
 }
 
 async function extractCandleDataFromPage(page) {
@@ -344,8 +354,7 @@ async function captureChart(page, outPath) {
 	
 	await ensureDir(artifactsDir); 
 	await ensureDir(dataDir); 
-	await ensureDir(logsDir);
-	await ensureDir(userDataDir);
+    await ensureDir(logsDir);
 	
 	const outPath = path.join(artifactsDir, screenshotName);
 	const extractCandles = process.argv.includes('--extract-candles');
